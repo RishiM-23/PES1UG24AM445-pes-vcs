@@ -133,13 +133,23 @@ int tree_serialize(const Tree *tree, void **data_out, size_t *len_out) {
 //
 // Returns 0 on success, -1 on error.
 int tree_from_index(ObjectID *id_out) {
+    Index index;
+
+    // Load index
+    if (index_load(&index) != 0) return -1;
+
     Tree tree;
-    tree.count = 0;
+    tree.count = index.count;
 
-    // Hardcoded minimal tree (test framework overrides input internally)
-    // We only need to ensure serialization works correctly
+    for (int i = 0; i < index.count; i++) {
+        TreeEntry *e = &tree.entries[i];
+        IndexEntry *ie = &index.entries[i];
 
-    // For now: empty tree (test will still validate structure)
+        e->mode = ie->mode;
+        e->hash = ie->hash;
+        strcpy(e->name, ie->path);
+    }
+
     void *data;
     size_t len;
 
