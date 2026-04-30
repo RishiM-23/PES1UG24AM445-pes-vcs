@@ -623,3 +623,4 @@ The following questions cover filesystem concepts beyond the implementation scop
 ## Project Structure
 - `object.c`: Content-addressable storage implementation
 - `tree.c`: Tree serialization and construction
+- `index.c`: Staging area implementation
