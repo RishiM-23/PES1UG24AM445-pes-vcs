@@ -624,3 +624,4 @@ The following questions cover filesystem concepts beyond the implementation scop
 - `object.c`: Content-addressable storage implementation
 - `tree.c`: Tree serialization and construction
 - `index.c`: Staging area implementation
+- `commit.c`: Commit creation and history tracking
