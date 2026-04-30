@@ -625,3 +625,5 @@ The following questions cover filesystem concepts beyond the implementation scop
 - `tree.c`: Tree serialization and construction
 - `index.c`: Staging area implementation
 - `commit.c`: Commit creation and history tracking
+
+Completed all 4 phases of PES-VCS successfully.
