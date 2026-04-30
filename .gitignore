@@ -20,3 +20,4 @@ test_tree
 
 *.o
 pes
+.pes/
