@@ -10,27 +10,31 @@
 
 int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out);
 
-// ─── PROVIDED ────────────────────────────────────────────────────────────────
-
 IndexEntry* index_find(Index *index, const char *path) {
     for (int i = 0; i < index->count; i++) {
         if (strcmp(index->entries[i].path, path) == 0)
             return &index->entries[i];
     }
+    
     return NULL;
 }
 
 int index_remove(Index *index, const char *path) {
     for (int i = 0; i < index->count; i++) {
         if (strcmp(index->entries[i].path, path) == 0) {
+            
             int remaining = index->count - i - 1;
+            
             if (remaining > 0)
                 memmove(&index->entries[i], &index->entries[i + 1],
                         remaining * sizeof(IndexEntry));
+            
             index->count--;
+            
             return index_save(index);
         }
     }
+    
     fprintf(stderr, "error: '%s' is not in the index\n", path);
     return -1;
 }
@@ -38,17 +42,21 @@ int index_remove(Index *index, const char *path) {
 int index_status(const Index *index) {
     printf("Staged changes:\n");
     int staged_count = 0;
+    
     for (int i = 0; i < index->count; i++) {
         printf("  staged:     %s\n", index->entries[i].path);
         staged_count++;
     }
+    
     if (staged_count == 0) printf("  (nothing to show)\n");
     printf("\n");
 
     printf("Unstaged changes:\n");
     int unstaged_count = 0;
+    
     for (int i = 0; i < index->count; i++) {
         struct stat st;
+        
         if (stat(index->entries[i].path, &st) != 0) {
             printf("  deleted:    %s\n", index->entries[i].path);
             unstaged_count++;
@@ -60,14 +68,17 @@ int index_status(const Index *index) {
             }
         }
     }
+    
     if (unstaged_count == 0) printf("  (nothing to show)\n");
     printf("\n");
 
     printf("Untracked files:\n");
     int untracked_count = 0;
     DIR *dir = opendir(".");
+    
     if (dir) {
         struct dirent *ent;
+        
         while ((ent = readdir(dir)) != NULL) {
             if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0) continue;
             if (strcmp(ent->d_name, ".pes") == 0) continue;
@@ -75,6 +86,7 @@ int index_status(const Index *index) {
             if (strstr(ent->d_name, ".o") != NULL) continue;
 
             int is_tracked = 0;
+            
             for (int i = 0; i < index->count; i++) {
                 if (strcmp(index->entries[i].path, ent->d_name) == 0) {
                     is_tracked = 1;
@@ -85,6 +97,7 @@ int index_status(const Index *index) {
             if (!is_tracked) {
                 struct stat st;
                 stat(ent->d_name, &st);
+                
                 if (S_ISREG(st.st_mode)) {
                     printf("  untracked:  %s\n", ent->d_name);
                     untracked_count++;
@@ -93,15 +106,13 @@ int index_status(const Index *index) {
         }
         closedir(dir);
     }
+    
     if (untracked_count == 0) printf("  (nothing to show)\n");
     printf("\n");
 
     return 0;
 }
 
-// ─── YOUR IMPLEMENTATION ─────────────────────────────────────────────────────
-
-// LOAD INDEX
 int index_load(Index *index) {
     index->count = 0;
 
@@ -129,14 +140,11 @@ int index_load(Index *index) {
     return 0;
 }
 
-// SAVE INDEX
 int compare_entries(const void *a, const void *b) {
-    return strcmp(((IndexEntry *)a)->path,
-                  ((IndexEntry *)b)->path);
+    return strcmp(((IndexEntry *)a)->path, ((IndexEntry *)b)->path);
 }
 
 int index_save(const Index *index) {
-    // ✅ allocate on heap instead of stack
     IndexEntry *temp = malloc(sizeof(IndexEntry) * index->count);
     if (!temp) return -1;
 
@@ -174,7 +182,6 @@ int index_save(const Index *index) {
     return 0;
 }
 
-// ADD FILE
 int index_add(Index *index, const char *path) {
     FILE *f = fopen(path, "rb");
     if (!f) return -1;
@@ -185,7 +192,7 @@ int index_add(Index *index, const char *path) {
     }
 
     long size = ftell(f);
-    if (size < 0) {   // 🔥 CRITICAL FIX
+    if (size < 0) {
         fclose(f);
         return -1;
     }
@@ -231,7 +238,7 @@ int index_add(Index *index, const char *path) {
         e = &index->entries[index->count++];
     }
 
-    e->mode = st.st_mode;
+    e->mode = S_ISDIR(st.st_mode) ? 040000 : (st.st_mode & S_IXUSR ? 0100755 : 0100644);
     e->hash = id;
     e->mtime_sec = st.st_mtime;
     e->size = st.st_size;
